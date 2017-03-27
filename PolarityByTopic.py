@@ -4,13 +4,13 @@ import urllib
 import nltk
 from nltk.tokenize import RegexpTokenizer
 tokenizer = RegexpTokenizer(r'\w+')
-#best senti classifier
+
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
 client = MongoClient(database)
 db = client[exclient]
 
-model =  gensim.models.LdaModel.load("example.model")
+model =  gensim.models.LdaModel.load("Example.model")
 
 cursor = db.excollection.find({"text":{"$exists":True}}, {"text": 1})
 
@@ -26,8 +26,8 @@ for t in tweet_list:
     t_lower = t.lower()
     tokens = tokenizer.tokenize(t_lower)
     tweets.append(tokens)   
-    
-    
+
+   
     
 from gensim import corpora, models
 dictionary = corpora.Dictionary(tweets)
@@ -44,20 +44,17 @@ for t in tweet_list:
         else: 
             dic[num] = [t.encode('ascii','ignore')]
 
-
 count2 = {}
 count3 = {}
 
+sid = SentimentIntensityAnalyzer()
 
-###############################################
-#TODO
-###############################################
 for topic in dic: 
     #method 1 
     s = ", ".join(dic[topic])
     #Senti classifier of choice here 
-    pos_score0, neg_score0 = senti_classifier.polarity_scores([s])
-    print("Pos: ", pos_score0, "Neg: ", neg_score0)
+    ss = sid.polarity_scores(s)
+    print("Pos: ", ss["pos"], "Neg: ",ss["neg"], "Neu: ", ss["neu"])
     
     #method 2
     count2[topic] = {}
@@ -65,26 +62,28 @@ for topic in dic:
     count2[topic]["neg"] = 0
     count2[topic]["neu"] = 0
     for sent in dic[topic]:
-        pos_score0, neg_score0 = senti_classifier.polarity_scores([sent])
-        if pos_score0 > neg_score0:
+        ss = sid.polarity_scores(sent)
+        if ss["pos"] > ss["neg"] and ss["pos"] > ss["neu"]:
             count2[topic]["pos"] += 1
-        elif pos_score0 < neg_score0:
+        elif ss["pos"] < ss["neg"] and ss["neg"] > ss["neu"]:
             count2[topic]["neg"] += 1
-        else:
+        else: 
             count2[topic]["neu"] += 1
+
     print(count2[topic]["pos"], count2[topic]["neg"], count2[topic]["neu"])
+    
     #method 3 
     count3[topic] = {}
     count3[topic]["pos"] = 0
     count3[topic]["neg"] = 0
-    #optional 
     count3[topic]["neu"] = 0
     
     for sent in dic[topic]:
-        pos_score0, neg_score0 = senti_classifier.polarity_scores([sent])
-        count3[topic]["pos"] += pos_score0
-        count3[topic]["neg"] += neg_score0
-        #optional 
-        #count3[topic]["neu"] += neu_score0
-    print(count3[topic]["pos"], count3[topic]["neg"])
-    #count2[topic]["neu"])
+        ss = sid.polarity_scores(sent)
+        count3[topic]["pos"] += ss["pos"]
+        count3[topic]["neg"] += ss["neg"]
+        count3[topic]["neu"] += ss["neu"]
+    print(count3[topic]["pos"], count3[topic]["neg"], count3[topic]["neu"])
+    
+    
+    
